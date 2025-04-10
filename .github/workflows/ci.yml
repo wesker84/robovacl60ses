@@ -1,0 +1,64 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  check-markdown:
+    runs-on: ubuntu-latest
+    name: runner / markdownlint
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+      - name: Run Markdown Lint
+        uses: DavidAnson/markdownlint-cli2-action@v18
+        with:
+          globs: "**/*.md"
+
+  check-links:
+    name: runner / linkspector
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run linkspector
+        uses: umbrelladocs/action-linkspector@v1
+        with:
+          fail_on_error: false
+          reporter: github-pr-review
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv venv && uv pip install -r requirements-dev.txt
+      - name: Lint with flake8
+        run: uv run flake8 custom_components tests
+      - name: Type check with mypy
+        run: uv run mypy --config-file=pyproject.toml custom_components
+
+  test:
+    runs-on: ubuntu-latest
+    needs: [check-markdown, check-links, lint]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.13'
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: Install dependencies
+        run: uv venv && uv pip install -r requirements-dev.txt
+      - name: Run tests with pytest
+        run: uv run pytest --cov=custom_components tests/

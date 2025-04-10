@@ -14,10 +14,11 @@
 
 """Config flow for Eufy Robovac integration."""
 from __future__ import annotations
+
 import json
 
 import logging
-from typing import Any, Optional
+from typing import Any, Optional, TypeAlias
 from copy import deepcopy
 
 import voluptuous as vol
@@ -26,9 +27,11 @@ import homeassistant.helpers.config_validation as cv
 from homeassistant import config_entries
 from homeassistant.core import callback
 from homeassistant.core import HomeAssistant
-from homeassistant.data_entry_flow import FlowResult
+# Import ConfigFlowResult directly from config_entries
+from homeassistant.config_entries import ConfigFlowResult
+
 from homeassistant.exceptions import HomeAssistantError
-from homeassistant.helpers.selector import selector
+# from homeassistant.helpers.selector import selector
 
 from homeassistant.const import (
     CONF_ACCESS_TOKEN,
@@ -57,6 +60,7 @@ from .const import CONF_AUTODISCOVERY, DOMAIN, CONF_VACS
 
 from .tuyawebapi import TuyaAPISession
 from .eufywebapi import EufyLogon
+from requests import Response
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -68,11 +72,22 @@ USER_SCHEMA = vol.Schema(
 )
 
 
-def get_eufy_vacuums(self):
-    """Login to Eufy and get the vacuum details"""
+def get_eufy_vacuums(self: dict[str, Any]) -> Response:
+    """Login to Eufy and get the vacuum details.
 
+    Returns:
+        Response: The API response containing vacuum information
+
+    Raises:
+        CannotConnect: If connection to the API fails
+        InvalidAuth: If authentication fails
+    """
     eufy_session = EufyLogon(self["username"], self["password"])
     response = eufy_session.get_user_info()
+
+    # Check if response is valid
+    if response is None:
+        raise CannotConnect
     if response.status_code != 200:
         raise CannotConnect
 
@@ -86,6 +101,10 @@ def get_eufy_vacuums(self):
         user_response["access_token"],
     )
 
+    # Check if response is valid
+    if response is None:
+        raise CannotConnect
+
     device_response = response.json()
 
     response = eufy_session.get_user_settings(
@@ -93,6 +112,11 @@ def get_eufy_vacuums(self):
         user_response["user_info"]["id"],
         user_response["access_token"],
     )
+
+    # Check if response is valid
+    if response is None:
+        raise CannotConnect
+
     settings_response = response.json()
 
     self[CONF_CLIENT_ID] = user_response["user_info"]["id"]
@@ -151,7 +175,7 @@ def get_eufy_vacuums(self):
                     CONF_ACCESS_TOKEN: device["localKey"],
                 }
                 self[CONF_VACS][item["device"]["id"]] = vac_details
-            except:
+            except Exception:
                 _LOGGER.debug(
                     "Skipping vacuum {}: found on Eufy but not on Tuya. Eufy details:".format(
                         item["device"]["id"]
@@ -159,6 +183,9 @@ def get_eufy_vacuums(self):
                 )
                 _LOGGER.debug(json.dumps(item["device"], indent=2))
 
+    # Ensure we're returning a valid Response object as declared in the return type
+    if response is None:
+        raise CannotConnect
     return response
 
 
@@ -168,17 +195,20 @@ async def validate_input(hass: HomeAssistant, data: dict[str, Any]) -> dict[str,
     return data
 
 
-class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
+class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):  # type: ignore[call-arg]
     """Handle a config flow for Eufy Robovac."""
 
     data: Optional[dict[str, Any]]
 
     async def async_step_user(
         self, user_input: dict[str, Any] | None = None
-    ) -> FlowResult:
+    ) -> ConfigFlowResult:
         """Handle the initial step."""
         if user_input is None:
-            return self.async_show_form(step_id="user", data_schema=USER_SCHEMA)
+            # Return form for user input
+            return self.async_show_form(
+                step_id="user", data_schema=USER_SCHEMA
+            )  # type: ignore[return-value]
         errors = {}
         try:
             unique_id = user_input[CONF_USERNAME]
@@ -194,14 +224,17 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             await self.async_set_unique_id(unique_id)
             self._abort_if_unique_id_configured()
             # return await self.async_step_repo(valid_data)
-            return self.async_create_entry(title=unique_id, data=valid_data)
+            # Create the config entry with validated data
+            return self.async_create_entry(
+                title=unique_id, data=valid_data
+            )  # type: ignore[return-value]
         return self.async_show_form(
             step_id="user", data_schema=USER_SCHEMA, errors=errors
-        )
+        )  # type: ignore[return-value]
 
     @staticmethod
     @callback
-    def async_get_options_flow(config_entry):
+    def async_get_options_flow(config_entry: config_entries.ConfigEntry) -> OptionsFlowHandler:
         """Get the options flow for this handler."""
         return OptionsFlowHandler(config_entry)
 
@@ -221,8 +254,9 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
         self._config_entry = config_entry
         self.selected_vacuum = None
 
-    async def async_step_init(self, user_input=None):
-        errors = {}
+    async def async_step_init(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Handle the initial step."""
+        errors: dict[str, str] = {}
 
         if user_input is not None:
             self.selected_vacuum = user_input["selected_vacuum"]
@@ -239,11 +273,11 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="init", data_schema=devices_schema, errors=errors
-        )
+        )  # type: ignore[return-value]
 
-    async def async_step_edit(self, user_input=None):
-        """Manage the options for the custom component."""
-        errors = {}
+    async def async_step_edit(self, user_input: dict[str, Any] | None = None) -> ConfigFlowResult:
+        """Handle the edit step."""
+        errors: dict[str, str] = {}
 
         vacuums = self.config_entry.data[CONF_VACS]
 
@@ -262,7 +296,7 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
                 data={CONF_VACS: updated_vacuums},
             )
 
-            return self.async_create_entry(title="", data={})
+            return self.async_create_entry(title="", data={})  # type: ignore[return-value]
 
         options_schema = vol.Schema(
             {
@@ -279,4 +313,4 @@ class OptionsFlowHandler(config_entries.OptionsFlow):
 
         return self.async_show_form(
             step_id="edit", data_schema=options_schema, errors=errors
-        )
+        )  # type: ignore[return-value]

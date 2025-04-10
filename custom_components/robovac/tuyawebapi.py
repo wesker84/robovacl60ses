@@ -1,5 +1,15 @@
-"""Original Work from here: Andre Borie https://gitlab.com/Rjevski/eufy-device-id-and-local-key-grabber"""
+"""Tuya Web API client for Eufy RoboVac integration.
 
+This module provides functionality to interact with the Tuya cloud API,
+which is used by Eufy devices. It handles authentication, encryption,
+and API requests needed to control Eufy RoboVac devices.
+
+Original work from: https://gitlab.com/Rjevski/eufy-device-id-and-local-key-grabber
+"""
+
+from __future__ import annotations
+
+# Standard library imports
 from hashlib import md5, sha256
 import hmac
 import json
@@ -8,10 +18,14 @@ import random
 import string
 import time
 import uuid
+from typing import Any, Dict, Optional
 
+# Third-party imports
 from cryptography.hazmat.backends.openssl import backend as openssl_backend
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 import requests
+# Local imports
+from .countries import get_phone_code_by_region
 
 TUYA_INITIAL_BASE_URL = "https://a1.tuyaeu.com"
 
@@ -21,6 +35,16 @@ EUFY_HMAC_KEY = (
 
 
 def unpadded_rsa(key_exponent: int, key_n: int, plaintext: bytes) -> bytes:
+    """Perform RSA encryption without padding.
+
+    Args:
+        key_exponent: The RSA key exponent.
+        key_n: The RSA key modulus.
+        plaintext: The plaintext to encrypt.
+
+    Returns:
+        The encrypted plaintext.
+    """
     keylength = math.ceil(key_n.bit_length() / 8)
     input_nr = int.from_bytes(plaintext, byteorder="big")
     crypted_nr = pow(input_nr, key_exponent, key_n)
@@ -28,6 +52,14 @@ def unpadded_rsa(key_exponent: int, key_n: int, plaintext: bytes) -> bytes:
 
 
 def shuffled_md5(value: str) -> str:
+    """Shuffle the MD5 hash of a string.
+
+    Args:
+        value: The string to shuffle.
+
+    Returns:
+        The shuffled MD5 hash of the string.
+    """
     _hash = md5(value.encode("utf-8")).hexdigest()
     return _hash[8:16] + _hash[0:8] + _hash[24:32] + _hash[16:24]
 
@@ -46,7 +78,7 @@ TUYA_PASSWORD_INNER_CIPHER = Cipher(
     backend=openssl_backend,
 )
 
-DEFAULT_TUYA_HEADERS = {"User-Agent": "TY-UA=APP/Android/2.4.0/SDK/null"}
+DEFAULT_TUYA_HEADERS: Dict[str, str] = {"User-Agent": "TY-UA=APP/Android/2.4.0/SDK/null"}
 
 SIGNATURE_RELEVANT_PARAMETERS = {
     "a",
@@ -86,13 +118,41 @@ DEFAULT_TUYA_QUERY_PARAMS = {
 
 
 class TuyaAPISession:
-    username = None
-    country_code = None
-    session_id = None
+    """Session handler for Tuya API authentication and requests.
 
-    def __init__(self, username, region, timezone, phone_code):
+    This class manages the authentication state and provides methods to
+    interact with the Tuya API endpoints used by Eufy devices. It handles
+    session creation, token acquisition, and making authenticated requests
+    to the Tuya cloud API.
+
+    Attributes:
+        username: The username for the Tuya API account.
+        country_code: The country code for the Tuya API account.
+        session_id: The current session ID for API requests.
+        base_url: The base URL for the Tuya API.
+        session: The requests session object for making HTTP requests.
+        default_query_params: Default query parameters for API requests.
+    """
+
+    username: Optional[str] = None
+    country_code: Optional[str] = None
+    session_id: Optional[str] = None
+    base_url: str
+    session: requests.Session
+    default_query_params: Dict[str, str]
+
+    def __init__(self, username: str, region: str, timezone: str, phone_code: str) -> None:
+        """Initialize the TuyaAPISession.
+
+        Args:
+            username: The username for the Tuya API.
+            region: The region code (AZ, AY, IN, EU).
+            timezone: The timezone ID.
+            phone_code: The phone country code.
+        """
         self.session = requests.session()
-        self.session.headers = DEFAULT_TUYA_HEADERS.copy()
+        # Use update instead of direct assignment to avoid type errors
+        self.session.headers.update(DEFAULT_TUYA_HEADERS)
         self.default_query_params = DEFAULT_TUYA_QUERY_PARAMS.copy()
         self.default_query_params["deviceId"] = self.generate_new_device_id()
         self.username = username
@@ -107,7 +167,12 @@ class TuyaAPISession:
         DEFAULT_TUYA_QUERY_PARAMS["timeZoneId"] = timezone
 
     @staticmethod
-    def generate_new_device_id():
+    def generate_new_device_id() -> str:
+        """Generate a new random device ID for the Tuya API.
+
+        Returns:
+            A string containing the generated device ID.
+        """
         expected_length = 44
         base64_characters = string.ascii_letters + string.digits
         device_id_dependent_part = "8534c8ec0ed0"
@@ -117,7 +182,16 @@ class TuyaAPISession:
         )
 
     @staticmethod
-    def get_signature(query_params: dict, encoded_post_data: str):
+    def get_signature(query_params: dict, encoded_post_data: str) -> str:
+        """Generate a signature for the Tuya API request.
+
+        Args:
+            query_params: The query parameters for the request.
+            encoded_post_data: The encoded post data.
+
+        Returns:
+            The generated signature string.
+        """
         query_params = query_params.copy()
         if encoded_post_data:
             query_params["postData"] = encoded_post_data
@@ -126,8 +200,11 @@ class TuyaAPISession:
             lambda p: p[0] and p[0] in SIGNATURE_RELEVANT_PARAMETERS, sorted_pairs
         )
         mapped_pairs = map(
-            # postData is pre-emptively hashed (for performance reasons?), everything else is included as-is
-            lambda p: p[0] + "=" + (shuffled_md5(p[1]) if p[0] == "postData" else p[1]),
+            # postData is pre-emptively hashed (for performance reasons?),
+            # everything else is included as-is
+            lambda p: p[0] + "=" + (
+                shuffled_md5(p[1]) if p[0] == "postData" else p[1]
+            ),
             filtered_pairs,
         )
         message = "||".join(mapped_pairs)
@@ -138,12 +215,38 @@ class TuyaAPISession:
     def _request(
         self,
         action: str,
-        version="1.0",
-        data: dict = None,
-        query_params: dict = None,
-        _requires_session=True,
-    ):
+        version: str = "1.0",
+        data: Optional[Dict[str, Any]] = None,
+        query_params: Optional[Dict[str, str]] = None,
+        _requires_session: bool = True,
+    ) -> Dict[str, Any]:
+        """Make a request to the Tuya API.
+
+        This method handles the construction of the API request, including
+        authentication, request signing, and response parsing. It will automatically
+        acquire a session if one is not already active and the request requires it.
+
+        Args:
+            action: The API action to perform (e.g., "tuya.m.device.get").
+            version: The API version to use (default: "1.0").
+            data: The data to send in the request body as a dictionary.
+            query_params: Additional query parameters to include in the request.
+            _requires_session: Whether this request requires an active session.
+                Set to False for authentication requests.
+
+        Returns:
+            The JSON response from the API as a dictionary containing the result.
+
+        Raises:
+            ValueError: If the session is required but could not be acquired.
+            requests.HTTPError: If the HTTP request fails with an HTTP error status.
+            RuntimeError: If the API request fails for other reasons.
+            TypeError: If the response is not a valid JSON object.
+            KeyError: If the response does not contain a 'result' key.
+        """
         if not self.session_id and _requires_session:
+            if not self.username or not self.country_code:
+                raise ValueError("Username and country code must be set for session-based requests")
             self.acquire_session()
 
         current_time = time.time()
@@ -157,30 +260,60 @@ class TuyaAPISession:
         }
         query_params = {**self.default_query_params, **extra_query_params}
         encoded_post_data = json.dumps(data, separators=(",", ":")) if data else ""
-        resp = self.session.post(
-            self.base_url + "/api.json",
-            params={
-                **query_params,
-                "sign": self.get_signature(query_params, encoded_post_data),
-            },
-            data={"postData": encoded_post_data} if encoded_post_data else None,
-        )
-        resp.raise_for_status()
-        data = resp.json()
-        if "result" not in data:
-            raise Exception(
-                f"No 'result' key in the response - the entire response is {data}."
-            )
-        return data["result"]
 
-    def request_token(self, username, country_code):
+        try:
+            resp = self.session.post(
+                self.base_url + "/api.json",
+                params={
+                    **query_params,
+                    "sign": self.get_signature(query_params, encoded_post_data),
+                },
+                data={"postData": encoded_post_data} if encoded_post_data else None,
+            )
+            resp.raise_for_status()
+            response_data: Dict[str, Any] = resp.json()
+        except requests.RequestException as e:
+            # Re-raise the original exception if it's already an HTTPError
+            if isinstance(e, requests.HTTPError):
+                raise
+            # Otherwise, raise a RuntimeError with our custom message
+            raise RuntimeError(f"API request to {action} failed: {str(e)}") from e
+        except json.JSONDecodeError as e:
+            raise TypeError(f"Invalid JSON response from API: {str(e)}") from e
+
+        if "result" not in response_data:
+            raise KeyError(
+                f"No 'result' key in the response - the entire response is {response_data}"
+            )
+
+        result: Dict[str, Any] = response_data["result"]
+        return result
+
+    def request_token(self, username: str, country_code: str) -> Dict[str, Any]:
+        """Request a token from the Tuya API.
+
+        Args:
+            username: The username for the Tuya API.
+            country_code: The country code.
+
+        Returns:
+            A dictionary containing the token response.
+        """
         return self._request(
             action="tuya.m.user.uid.token.create",
             data={"uid": username, "countryCode": country_code},
             _requires_session=False,
         )
 
-    def determine_password(self, username: str):
+    def determine_password(self, username: str) -> str:
+        """Determine the password for the given username.
+
+        Args:
+            username: The username to determine the password for.
+
+        Returns:
+            The determined password as a string.
+        """
         new_uid = username
         padded_size = 16 * math.ceil(len(new_uid) / 16)
         password_uid = new_uid.zfill(padded_size)
@@ -189,7 +322,17 @@ class TuyaAPISession:
         encrypted_uid += encryptor.finalize()
         return md5(encrypted_uid.hex().upper().encode("utf-8")).hexdigest()
 
-    def request_session(self, username, password, country_code):
+    def request_session(self, username: str, password: str, country_code: str) -> Dict[str, Any]:
+        """Request a session from the Tuya API.
+
+        Args:
+            username: The username for the Tuya API.
+            password: The password for the Tuya API.
+            country_code: The country code.
+
+        Returns:
+            A dictionary containing the session response.
+        """
         token_response = self.request_token(username, country_code)
         encrypted_password = unpadded_rsa(
             key_exponent=int(token_response["exponent"]),
@@ -220,7 +363,16 @@ class TuyaAPISession:
             else:
                 raise e
 
-    def acquire_session(self):
+    def acquire_session(self) -> None:
+        """Acquire a session from the Tuya API.
+
+        This method acquires a session from the Tuya API.
+        """
+        if self.username is None:
+            raise ValueError("Username is not set")
+        if self.country_code is None:
+            raise ValueError("Country code is not set")
+
         password = self.determine_password(self.username)
         session_response = self.request_session(
             self.username, password, self.country_code
@@ -230,13 +382,26 @@ class TuyaAPISession:
         self.country_code = (
             session_response["phoneCode"]
             if session_response["phoneCode"]
-            else self.getCountryCode(session_response["domain"]["regionCode"])
+            else get_phone_code_by_region(session_response["domain"]["regionCode"])
         )
 
-    def list_homes(self):
+    def list_homes(self) -> dict:
+        """List homes from the Tuya API.
+
+        Returns:
+            A dictionary containing the list of homes.
+        """
         return self._request(action="tuya.m.location.list", version="2.1")
 
-    def get_device(self, devId):
+    def get_device(self, devId: str) -> dict:
+        """Get device information from the Tuya API.
+
+        Args:
+            devId: The device ID to get information for.
+
+        Returns:
+            A dictionary containing the device information.
+        """
         return self._request(
             action="tuya.m.device.get", version="1.0", data={"devId": devId}
         )
