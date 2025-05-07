@@ -1,8 +1,8 @@
 from homeassistant.components.vacuum import VacuumEntityFeature
-from .base import RoboVacEntityFeature, RobovacCommand
+from .base import RoboVacEntityFeature, RobovacCommand, RobovacModelDetails
 
 
-class T2255:
+class T2255(RobovacModelDetails):
     homeassistant_features = (
         VacuumEntityFeature.BATTERY
         | VacuumEntityFeature.CLEAN_SPOT
@@ -40,9 +40,4 @@ class T2255:
         RobovacCommand.LOCATE: 103,
         RobovacCommand.BATTERY: 104,
         RobovacCommand.ERROR: 106,
-        # These commands need codes adding
-        # RobovacCommand.CLEANING_AREA: 0,
-        # RobovacCommand.CLEANING_TIME: 0,
-        # RobovacCommand.AUTO_RETURN: 0,
-        # RobovacCommand.DO_NOT_DISTURB: 0,
     }

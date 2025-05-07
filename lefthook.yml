@@ -1,0 +1,11 @@
+# lefthook.yml
+pre-commit:
+  parallel: true
+  commands:
+    lint:
+      glob: "*.{py,yml,yaml,md}"
+      run: task lint
+    test:
+      run: task test
+    type-check:
+      run: task type-check
