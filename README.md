@@ -5,7 +5,7 @@ This is a custom integration for Tuya-based Eufy L60 vacuums only in Home Assist
 ### ✅ Key Features
 - Full DPS payload mapping (e.g., start, pause, spot clean, fan modes).
 - On its own domain.
-- Will skip unsupported models it finds in account to eliminate ghost entities.
+- Will skip unsupported models found in account to eliminate additional ghost entities.
 - Plenty of attributes to monitor and possibly discover new codes with.
 - Docker-friendly setup with persistent file handling.
 
