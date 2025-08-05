@@ -1,5 +1,4 @@
-# Eufy RobovVac control for Home Assistant
-# Robovac L60 Integration (Enhanced Fork)
+# Eufy Robovac L60 Integration (Enhanced Fork)
 
 This is a custom integration for Tuya-based L60 vacuums in Home Assistant. This is a frankensteined version that can be ran alongside damacus/robovac integration until it's able to get resolved there.
 
