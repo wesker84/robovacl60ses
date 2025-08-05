@@ -4,7 +4,6 @@ from typing import Protocol, Dict, List, Any, Type, Optional
 
 class RoboVacEntityFeature(IntEnum):
     """Supported features of the RoboVac entity."""
-
     EDGE = 1
     SMALL_ROOM = 2
     CLEANING_TIME = 4
@@ -37,33 +36,30 @@ class RobovacCommand(StrEnum):
 
 
 class TuyaCodes(StrEnum):
-    """Default DPS codes for Tuya-based vacuums.
+    """DPS codes mapped for T2267 (L60) vacuum.
 
-    These codes can be overridden in model-specific implementations.
+    These are confirmed to work with base64 encoding and Tuya API.
     """
-    START_PAUSE = "2"
-    DIRECTION = "3"
-    MODE = "5"
-    STATUS = "15"
-    RETURN_HOME = "101"
-    FAN_SPEED = "102"
-    LOCATE = "103"
-    BATTERY_LEVEL = "104"
-    ERROR_CODE = "106"
-    DO_NOT_DISTURB = "107"
-    CLEANING_TIME = "109"
-    CLEANING_AREA = "110"
-    BOOST_IQ = "118"
-    ROOM_CLEAN = "124"
-    AUTO_RETURN = "135"
+    START_PAUSE = "156"
+    DIRECTION = "155"
+    MODE = "152"
+    STATUS = "153"
+    RETURN_HOME = "173"
+    FAN_SPEED = "158"
+    LOCATE = "160"
+    BATTERY_LEVEL = "163"
+    ERROR_CODE = "177"
+    DO_NOT_DISTURB = "157"
+    BOOST_IQ = "159"
+    CONSUMABLES = "168"
 
 
-# Default consumables DPS codes
-TUYA_CONSUMABLES_CODES = ["142", "116"]
+TUYA_CONSUMABLES_CODES: List[str] = ["168"]  # Updated for T2267 compatibility
 
 
 class RobovacModelDetails(Protocol):
     homeassistant_features: int
     robovac_features: int
-    commands: Dict[RobovacCommand, Any]
-    dps_codes: Dict[str, str] = {}  # Optional model-specific DPS codes
+    commands: Dict[RobovacCommand, Dict[str, Any]]
+    dps_codes: Dict[str, str]
+4
