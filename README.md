@@ -1,6 +1,6 @@
 # Eufy Robovac L60 Integration (Enhanced Fork)
 
-This is a custom integration for Tuya-based Eufy L60 vacuums in Home Assistant. This is a frankensteined version that can be ran alongside damacus/robovac integration if necessary until this model gets fixed there.
+This is a custom integration for Tuya-based Eufy L60 vacuums only in Home Assistant. This is a frankensteined version that can be ran alongside damacus/robovac integration if necessary until this model gets fixed there.
 
 ### ✅ Key Features
 - Full DPS payload mapping (e.g., start, pause, spot clean, fan modes).
