@@ -683,7 +683,7 @@ class RoboVacEntity(StateVacuumEntity):
         # Preserve raw mode for traceability
         self._attr_mode_raw = mode if mode is not None else ""
 
-        # Decode L60 mode payload if present
+        # Decode L60 SES mode payload if present
         if mode:
             self._attr_mode = decode_mode_string(mode)
         else:
@@ -809,13 +809,13 @@ class RoboVacEntity(StateVacuumEntity):
         dps_key = self._get_dps_code("MODE")
         self._attr_cmd_dps_raw = dps_key
 
-        _LOGGER.debug("Sending hardcoded L60 start command")
+        _LOGGER.debug("Sending hardcoded L60 SES start command")
         await self.vacuum.async_set({
             dps_key: "BBoCCAE="
         })
 
     async def async_pause(self, **kwargs: Any) -> None:
-        """Pause the vacuum cleaner using direct payload for L60."""
+        """Pause the vacuum cleaner using direct payload for L60 SES."""
         if self.vacuum is None:
             _LOGGER.error("Cannot pause vacuum: vacuum not initialized")
             return
@@ -826,7 +826,7 @@ class RoboVacEntity(StateVacuumEntity):
         })
 
     async def async_stop(self, **kwargs: Any) -> None:
-        """Stop the vacuum cleaner using direct payload for L60."""
+        """Stop the vacuum cleaner using direct payload for L60 SES."""
         _LOGGER.info("Stop command issued")
         if self.vacuum is None:
             _LOGGER.error("Cannot stop vacuum: vacuum not initialized")
@@ -838,7 +838,7 @@ class RoboVacEntity(StateVacuumEntity):
         })
 
     async def async_clean_spot(self, **kwargs: Any) -> None:
-        """Perform a spot clean using direct payload for L60."""
+        """Perform a spot clean using direct payload for L60 SES."""
         _LOGGER.info("Spot Clean Pressed")
         if self.vacuum is None:
             _LOGGER.error("Cannot clean spot: vacuum not initialized")
@@ -850,14 +850,14 @@ class RoboVacEntity(StateVacuumEntity):
         })
 
     async def async_set_fan_speed(self, fan_speed: str, **kwargs: Any) -> None:
-        """Set fan speed using direct payload for L60."""
+        """Set fan speed using direct payload for L60 SES."""
         _LOGGER.info("Fan Speed Selected")
 
         if self.vacuum is None:
             _LOGGER.error("Cannot set fan speed: vacuum not initialized")
             return
 
-        # Normalize fan speed input to match T2267 values
+        # Normalize fan speed input to match T2277 values
         normalized_fan_speed = fan_speed.lower().replace(" ", "_")
         value_map = {
             "quiet": "Quiet",
