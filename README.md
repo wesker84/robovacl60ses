@@ -1,4 +1,4 @@
-# Eufy Robovac L60 Integration (Enhanced Fork)
+# Eufy RoboVac L60 SES Integration (Enhanced Fork)
 
 This is a custom integration for Tuya-based Eufy L60 SES vacuums (T2277 only) in Home Assistant. This is a fork of a frankensteined version by kadeschs and can be ran alongside damacus/robovac integration if necessary until this model gets fixed there.
 
