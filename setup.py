@@ -19,7 +19,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="robovacl60ses",
+    name="robovacl60",
     version="1.0",
     author="Dan Wevv",
     url="http://github.com/wesker84/robovacl60ses",
