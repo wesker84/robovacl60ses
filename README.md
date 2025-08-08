@@ -10,7 +10,7 @@ This is a custom integration for Tuya-based Eufy L60 SES vacuums (T2277 only) in
 - Docker-friendly setup with persistent file handling.
 
 ### 🔧 Installation
-1. Clone the repo and copy `custom_components/robovacl60ses`.
+1. Add repository using HACS.
 2. Restart Home Assistant.
 3. Add Eufy RoboVac L60 SES integration.
 4. Enjoy!
