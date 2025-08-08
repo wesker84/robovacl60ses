@@ -72,8 +72,8 @@ async def async_setup(hass: HomeAssistant, entry: ConfigEntry) -> bool:
 
 
 async def async_setup_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
-    """Set up the Eufy Robovac config entry (L60 only)."""
-    SUPPORTED_MODEL_PREFIX = "T2267"  # L60 model series
+    """Set up the Eufy Robovac config entry (L60 SES only)."""
+    SUPPORTED_MODEL_PREFIX = "T2277"  # L60 SES model series
 
     original_vacs = entry.data.get(CONF_VACS, {})
     valid_vacs: dict[str, Any] = {}
