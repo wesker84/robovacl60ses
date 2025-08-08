@@ -47,7 +47,7 @@ class RobovacBatterySensor(SensorEntity):
         self.robovac_id = item[CONF_ID]
         # e.g. “abc123_battery”
         self._attr_unique_id = f"{self.robovac_id}_battery"
-        # This will show up as “RoboVac L60 Battery” (or whatever you named it)
+        # This will show up as “RoboVac L60 SES Battery” (or whatever you named it)
         self._attr_name = f"{item[CONF_NAME]} Battery"
 
         self._attr_device_info = DeviceInfo(
