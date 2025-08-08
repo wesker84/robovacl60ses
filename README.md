@@ -1,6 +1,6 @@
 # Eufy Robovac L60 Integration (Enhanced Fork)
 
-This is a custom integration for Tuya-based Eufy L60 vacuums (T2267) only in Home Assistant. This is a frankensteined version that can be ran alongside damacus/robovac integration if necessary until this model gets fixed there.
+This is a custom integration for Tuya-based Eufy L60 SES vacuums (T2277 only) in Home Assistant. This is a fork of a frankensteined version by kadeschs and can be ran alongside damacus/robovac integration if necessary until this model gets fixed there.
 
 ### ✅ Key Features
 - Full DPS payload mapping (e.g., start, pause, spot clean, fan modes).
@@ -10,9 +10,9 @@ This is a custom integration for Tuya-based Eufy L60 vacuums (T2267) only in Hom
 - Docker-friendly setup with persistent file handling.
 
 ### 🔧 Installation
-1. Clone the repo and copy `custom_components/robovacl60`.
+1. Clone the repo and copy `custom_components/robovacl60ses`.
 2. Restart Home Assistant.
-3. Add Eufy RoboVac L60 integration.
+3. Add Eufy RoboVac L60 SES integration.
 4. Enjoy!
 
 ### 🛠 Advanced Integration
