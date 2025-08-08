@@ -19,13 +19,13 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="robovac",
+    name="robovacl60ses",
     version="1.0",
     author="Dan Wevv",
-    url="http://github.com/damacus/robovac",
+    url="http://github.com/wesker84/robovacl60ses",
     packages=find_packages(),
     scripts=[],
-    description="Python API for controlling Eufy RoboVac vacuum cleaners",
+    description="Python API for controlling Eufy RoboVac L60 SES vacuum cleaners",
     classifiers=[
         "Development Status :: 4 - Beta",
         "Intended Audience :: Developers",
