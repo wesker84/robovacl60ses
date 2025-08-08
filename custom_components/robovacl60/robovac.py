@@ -133,7 +133,7 @@ class RoboVac(TuyaDevice):
             value: The human-readable value (e.g., "auto")
 
         Returns:
-            The model-specific value for the command (e.g., "BBoCCAE=" for L60 "auto" mode)
+            The model-specific value for the command (e.g., "BBoCCAE=" for L60 SES "auto" mode)
         """
         try:
             values = self._get_command_values(RobovacCommand(command_name))
