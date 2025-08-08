@@ -36,7 +36,7 @@ class RobovacCommand(StrEnum):
 
 
 class TuyaCodes(StrEnum):
-    """DPS codes mapped for T2267 (L60) vacuum.
+    """DPS codes mapped for T2277 (L60 SES) vacuum.
 
     These are confirmed to work with base64 encoding and Tuya API.
     """
