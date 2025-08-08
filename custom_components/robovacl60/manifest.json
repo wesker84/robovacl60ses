@@ -1,16 +1,16 @@
 {
-    "domain": "robovacl60",
-    "name": "Eufy Robovac L60",
+    "domain": "robovacl60ses",
+    "name": "Eufy Robovac L60 SES",
     "codeowners": [
-        "@kadeschs"
+        "@wesker84"
     ],
     "config_flow": true,
     "dependencies": [],
-    "documentation": "https://github.com/kadeschs/robovacl60",
+    "documentation": "https://github.com/wesker84/robovacl60ses",
     "integration_type": "device",
     "iot_class": "local_polling",
-    "issue_tracker": "https://github.com/kadeschs/robovacl60/issues",
+    "issue_tracker": "https://github.com/wesker84/robovacl60ses/issues",
     "requirements": [],
     "version": "1.0.0",
-    "icon": "/local/robovacl60/icon.png"
+    "icon": "/local/robovac/icon.png"
 }
